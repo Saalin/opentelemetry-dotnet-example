@@ -1,0 +1,71 @@
+﻿services:
+  demo.web:
+    image: demo.web
+    hostname: demo
+    build:
+      context: .
+      dockerfile: src/Demo.Web/Dockerfile
+    environment:
+      - OTEL_COLLECTOR_URL=http://otel:4317
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    hostname: otel
+    volumes:
+      - ./provisioning/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    command: [ "--config", "/etc/otel-collector-config.yaml" ]
+
+  memcached:
+    image: memcached:latest
+    container_name: memcached
+    environment:
+      - MEMCACHED_MAX_MEMORY=64m
+      - MEMCACHED_THREADS=4
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./provisioning/datasources:/etc/grafana/provisioning/datasources
+
+  loki:
+    image: grafana/loki:latest
+    command: [ "-config.file=/etc/loki/local-config.yaml" ]
+    volumes:
+      - loki-data:/loki
+
+  tempo:
+    image: grafana/tempo:latest
+    command: [ "--config.file=/etc/tempo.yml" ]
+    volumes:
+      - tempo-data:/var/tempo
+      - ./provisioning/tempo.yml:/etc/tempo.yml
+    depends_on:
+      - memcached
+
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - --config.file=/etc/prometheus.yaml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --enable-feature=native-histograms
+    volumes:
+      - ./provisioning/prometheus.yaml:/etc/prometheus.yaml
+    ports:
+      - "9090:9090"
+
+volumes:
+  grafana-data:
+  loki-data:
+  tempo-data:
