@@ -23,15 +23,15 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         var applicationName = builder.Environment.ApplicationName;
-        
+
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
         builder.Services.AddHttpClient();
         builder.Services.AddHttpContextAccessor();
-        
+
         var source = new ActivitySource(applicationName);
-        
+
         builder.Services.AddSingleton(source);
 
         var otelCollectorUrl = Environment.GetEnvironmentVariable("OTEL_COLLECTOR_URL");
@@ -43,7 +43,7 @@ public class Program
                 opts.Endpoint = new Uri(otelCollectorUrl);
                 opts.Protocol = OtlpExportProtocol.Grpc;
             };
-        
+
             builder.Services.AddOpenTelemetry()
                 .ConfigureResource(resource => resource
                     .AddService(applicationName)
@@ -64,12 +64,12 @@ public class Program
                     .AddOtlpExporter(exporterConfiguration))
                 .WithLogging(logging => logging
                     .AddOtlpExporter(exporterConfiguration));
-        
+
             builder.Services.Configure<OpenTelemetryLoggerOptions>(x => x.IncludeScopes = true);
         }
 
         var app = builder.Build();
-        
+
         app.UseSwagger();
         app.UseSwaggerUI();
 
@@ -84,7 +84,7 @@ public class Program
                     activity?.AddEvent(new ActivityEvent("Boom!"));
                     await Task.Delay(500);
                 }
-                
+
                 return Results.Ok(await res.Content.ReadAsStringAsync());
             })
             .WithName("ExampleApiCall")
