@@ -1,0 +1,12 @@
+groups:
+  - name: always-fire
+    interval: 1m
+    rules:
+      - alert: AlwaysFiringTestAlert
+        expr: vector(1)
+        for: 10s
+        labels:
+          severity: test
+        annotations:
+          summary: "This alert is always firing"
+          description: "This is a test alert that always triggers."

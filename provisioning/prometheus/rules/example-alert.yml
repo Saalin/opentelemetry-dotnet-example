@@ -1,0 +1,10 @@
+﻿groups:
+  - name: example-alert
+    rules:
+      - alert: InstanceDown
+        expr: go_gc_cycles_automatic_gc_cycles_total > 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance is down"

@@ -16,7 +16,7 @@
     image: otel/opentelemetry-collector:latest
     hostname: otel
     volumes:
-      - ./provisioning/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./provisioning/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
     command: [ "--config", "/etc/otel-collector-config.yaml" ]
 
   memcached:
@@ -36,13 +36,17 @@
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./provisioning/datasources:/etc/grafana/provisioning/datasources:ro
 
   loki:
     image: grafana/loki:latest
-    command: [ "-config.file=/etc/loki/local-config.yaml" ]
+    command: [ "-config.file=/etc/loki/config.yml" ]
+    ports:
+      - "3100:3100"
     volumes:
       - loki-data:/loki
+      - ./provisioning/loki/config.yml:/etc/loki/config.yml:ro
+      - ./provisioning/loki/rules:/etc/loki/rules/fake
 
   tempo:
     image: grafana/tempo:latest
@@ -56,14 +60,30 @@
   prometheus:
     image: prom/prometheus:latest
     command:
-      - --config.file=/etc/prometheus.yaml
+      - --config.file=/etc/prometheus/prometheus.yaml
       - --web.enable-remote-write-receiver
       - --enable-feature=exemplar-storage
       - --enable-feature=native-histograms
     volumes:
-      - ./provisioning/prometheus.yaml:/etc/prometheus.yaml
+      - ./provisioning/prometheus/config.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./provisioning/prometheus/rules:/etc/prometheus/rules:ro
     ports:
       - "9090:9090"
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./provisioning/alertmanager-config.yml:/etc/alertmanager/config.yml:ro
+    command:
+      - --config.file=/etc/alertmanager/config.yml
+
+  smtp4dev:
+    image: rnwood/smtp4dev
+    ports:
+      - "5000:80"
+      - "2525:25"
 
 volumes:
   grafana-data:
