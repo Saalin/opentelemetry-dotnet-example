@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
@@ -8,7 +7,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -22,6 +20,8 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        builder.Logging.ClearProviders();
+
         var applicationName = builder.Environment.ApplicationName;
 
         builder.Services.AddEndpointsApiExplorer();
@@ -34,39 +34,29 @@ public class Program
 
         builder.Services.AddSingleton(source);
 
-        var otelCollectorUrl = Environment.GetEnvironmentVariable("OTEL_COLLECTOR_URL");
+        builder.Services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource
+                .AddService(applicationName)
+                .AddAttributes([
+                    new KeyValuePair<string, object>("test", "val")
+                ]))
+            .WithMetrics(metrics => metrics
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddMeter("Microsoft.AspNetCore.Hosting")
+                .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+                .AddMeter("System.Net.Http")
+                .AddMeter("System.Net.NameResolution")
+                .AddOtlpExporter())
+            .WithTracing(tracing => tracing
+                .AddSource(applicationName)
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter())
+            .WithLogging(logging => logging
+                .AddOtlpExporter());
 
-        if (otelCollectorUrl != null)
-        {
-            Action<OtlpExporterOptions> exporterConfiguration = opts =>
-            {
-                opts.Endpoint = new Uri(otelCollectorUrl);
-                opts.Protocol = OtlpExportProtocol.Grpc;
-            };
-
-            builder.Services.AddOpenTelemetry()
-                .ConfigureResource(resource => resource
-                    .AddService(applicationName)
-                    .AddAttributes([
-                        new KeyValuePair<string, object>("test", "val")
-                    ]))
-                .WithMetrics(metrics => metrics
-                    .AddAspNetCoreInstrumentation()
-                    .AddMeter("Microsoft.AspNetCore.Hosting")
-                    .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
-                    .AddMeter("System.Net.Http")
-                    .AddMeter("System.Net.NameResolution")
-                    .AddOtlpExporter(exporterConfiguration))
-                .WithTracing(tracing => tracing
-                    .AddSource(applicationName)
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddOtlpExporter(exporterConfiguration))
-                .WithLogging(logging => logging
-                    .AddOtlpExporter(exporterConfiguration));
-
-            builder.Services.Configure<OpenTelemetryLoggerOptions>(x => x.IncludeScopes = true);
-        }
+        builder.Services.Configure<OpenTelemetryLoggerOptions>(x => x.IncludeScopes = true);
 
         var app = builder.Build();
 

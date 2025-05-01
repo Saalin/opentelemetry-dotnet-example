@@ -6,7 +6,8 @@
       context: .
       dockerfile: src/Demo.Web/Dockerfile
     environment:
-      - OTEL_COLLECTOR_URL=http://otel:4317
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
     ports:
       - "8080:8080"
     depends_on:
@@ -18,13 +19,9 @@
     volumes:
       - ./provisioning/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
     command: [ "--config", "/etc/otel-collector-config.yaml" ]
-
-  memcached:
-    image: memcached:latest
-    container_name: memcached
-    environment:
-      - MEMCACHED_MAX_MEMORY=64m
-      - MEMCACHED_THREADS=4
+    depends_on:
+      - tempo
+      - loki
 
   grafana:
     image: grafana/grafana:latest
@@ -41,8 +38,6 @@
   loki:
     image: grafana/loki:latest
     command: [ "-config.file=/etc/loki/config.yml" ]
-    ports:
-      - "3100:3100"
     volumes:
       - loki-data:/loki
       - ./provisioning/loki/config.yml:/etc/loki/config.yml:ro
@@ -54,8 +49,6 @@
     volumes:
       - tempo-data:/var/tempo
       - ./provisioning/tempo.yml:/etc/tempo.yml
-    depends_on:
-      - memcached
 
   prometheus:
     image: prom/prometheus:latest
