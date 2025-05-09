@@ -4,6 +4,11 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:4317
 
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+
 exporters:
   otlphttp/logs:
     endpoint: "http://loki:3100/otlp"
@@ -22,7 +27,7 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: []
+      processors: [batch]
       exporters: [otlphttp/logs]
 
     metrics:
