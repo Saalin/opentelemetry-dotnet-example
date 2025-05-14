@@ -1,5 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -40,5 +45,15 @@ public static class OpenTelemetryExtensions
                 .AddOtlpExporter());
 
         services.Configure<OpenTelemetryLoggerOptions>(x => x.IncludeScopes = true);
+    }
+
+    public static Activity? StartActivity(this ActivitySource source, HttpContext httpContext)
+    {
+        var routeName = httpContext.GetEndpoint()?
+            .Metadata
+            .OfType<RouteNameMetadata>()
+            .FirstOrDefault()?.RouteName ?? httpContext.Request.Path;
+
+        return source.StartActivity(routeName);
     }
 }

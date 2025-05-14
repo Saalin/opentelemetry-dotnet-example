@@ -1,10 +1,10 @@
 using System.Threading.Tasks;
 using Demo.Web.Endpoints;
 using Demo.Web.Extensions;
+using Demo.Web.Observability;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Demo.Web.Observability;
 
 namespace Demo.Web;
 
@@ -24,16 +24,16 @@ public class Program
         builder.Services.AddHttpClient();
         builder.Services.AddHttpContextAccessor();
 
-        builder.Services.AddOpenTelemetry(serviceName: applicationName);
-        
+        builder.Services.AddOpenTelemetry(applicationName);
+
         builder.Services.AddHealthChecks();
 
         var app = builder.Build();
 
         app.ConfigureForwarderHeaders();
-        
+
         app.UseRouting();
-        
+
         app.UseSwagger();
         app.UseSwaggerUI();
 

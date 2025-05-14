@@ -11,9 +11,9 @@ public class FlatteningLogProcessor : BaseProcessor<LogRecord>
 {
     public override void OnEnd(LogRecord logRecord)
     {
-        if (logRecord.Attributes is null) 
+        if (logRecord.Attributes is null)
             return;
-        
+
         logRecord.Attributes = logRecord.Attributes.SelectMany(kv =>
             Flatten(kv.Key.TrimStart('@'), kv.Value)
                 .Select(x => new KeyValuePair<string, object?>(x.Item1, x.Item2))).ToList();
@@ -23,7 +23,7 @@ public class FlatteningLogProcessor : BaseProcessor<LogRecord>
     {
         if (value is null)
             return [];
-        
+
         var type = value.GetType();
         if (type.IsPrimitive || value is string || value is DateTime || value is Guid || value is decimal)
         {

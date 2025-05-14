@@ -9,7 +9,7 @@ public static class ForwarderHeadersExtensions
     {
         var forwardedHeadersOptions = new ForwardedHeadersOptions
         {
-            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
         };
 
         forwardedHeadersOptions.KnownNetworks.Clear();
