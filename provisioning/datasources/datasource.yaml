@@ -25,7 +25,6 @@ datasources:
         datasourceUid: loki
         filterByTraceID: true
         mapTagNames: ["trace_id"]
-
   - name: Prometheus
     type: prometheus
     access: proxy

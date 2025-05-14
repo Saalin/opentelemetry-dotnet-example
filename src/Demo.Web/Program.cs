@@ -1,9 +1,7 @@
-using System.Diagnostics;
-using System.Net.Http;
 using System.Threading.Tasks;
+using Demo.Web.Endpoints;
+using Demo.Web.Extensions;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Demo.Web.Observability;
@@ -12,7 +10,7 @@ namespace Demo.Web;
 
 public class Program
 {
-    public static async Task Main(string[] args)
+    public static Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
@@ -32,28 +30,16 @@ public class Program
 
         var app = builder.Build();
 
+        app.ConfigureForwarderHeaders();
+        
+        app.UseRouting();
+        
         app.UseSwagger();
         app.UseSwaggerUI();
 
+        app.MapDummy();
         app.MapHealthChecks("/healthz");
-        
-        app.MapGet("/", async ([FromServices] HttpClient httpClient, ActivitySource activitySource, ILogger<Program> logger) =>
-            {
-                var res = await httpClient.GetAsync("https://dummyjson.com/test");
 
-                using (var activity = activitySource.StartActivity())
-                {
-                    logger.LogInformation("From TestActivity, structure: {@Structure}", new { a = "42", b = new { x = "422"} });
-                    await Task.Delay(500);
-                    activity?.AddEvent(new ActivityEvent("Boom!"));
-                    await Task.Delay(500);
-                }
-
-                return Results.Ok(await res.Content.ReadAsStringAsync());
-            })
-            .WithName("ExampleApiCall")
-            .WithOpenApi();
-
-        await app.RunAsync();
+        return app.RunAsync();
     }
 }
