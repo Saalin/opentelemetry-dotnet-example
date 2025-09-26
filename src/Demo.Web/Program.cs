@@ -15,6 +15,7 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Logging.ClearProviders();
+        builder.Logging.Configure(x => x.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId);
 
         var applicationName = builder.Environment.ApplicationName;
 
